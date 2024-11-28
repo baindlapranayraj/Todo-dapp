@@ -37,38 +37,48 @@ describe("todo_dapp", () => {
   });
 
   it("Created Todo", async () => {
-    let user_profile_account = await program.account.userProfile.fetch(userPDA);
-    console.log(user_profile_account);
-    // let arr = Buffer.from(user_profile_account.currentTodoIndex.toString());
+    try {
+      let user_profile_account = await program.account.userProfile.fetch(
+        userPDA
+      );
+      // console.log(user_profile_account);
+      // let arr = Buffer.from(user_profile_account.currentTodoIndex.toString());
 
-    let [todoPDA, _bump] = anchor.web3.PublicKey.findProgramAddressSync(
-      [
-        utf8.encode("TODO_ACCOUNT"),
-        provider.wallet.publicKey.toBuffer(),
-        Uint8Array.from([user_profile_account.currentTodoIndex]),
-      ],
-      program.programId
-    );
+      let uint8Array = new Uint8Array([user_profile_account.currentTodoIndex]);
 
-    let content_todo = "My name is pranaya raj";
+      let [todoPDA, _bump] = anchor.web3.PublicKey.findProgramAddressSync(
+        [
+          Buffer.from("TODO_ACCOUNT"),
+          provider.wallet.publicKey.toBuffer(),
+          uint8Array,
+        ],
+        program.programId
+      );
 
-    let trxHash = await program.methods
-      .createTodo(content_todo, user_profile_account.currentTodoIndex)
-      .accounts({
-        authority: provider.wallet.publicKey,
-        todoAccount: todoPDA,
-        userProfile: userPDA,
-        systemProgram: anchor.web3.SystemProgram.programId,
-      })
-      .rpc();
+      console.log("The TodoPDA is:", todoPDA.toBase58());
 
-    let { content, idx, markedBool } = await program.account.todoAccount.fetch(
-      todoPDA
-    );
+      let content_todo = "My name is pranaya raj";
 
-    expect(content).to.equal(content_todo);
-    expect(idx).to.equal(user_profile_account.currentTodoIndex);
-    expect(markedBool).to.equal(false);
+      let trxHash = await program.methods
+        .createTodo(content_todo, user_profile_account.currentTodoIndex)
+        .accounts({
+          authority: provider.wallet.publicKey,
+          todoAccount: todoPDA,
+          userProfile: userPDA,
+          systemProgram: anchor.web3.SystemProgram.programId,
+        })
+        .rpc();
+
+      let { content, idx, markedBool } =
+        await program.account.todoAccount.fetch(todoPDA);
+
+      expect(content).to.equal(content_todo);
+      expect(idx).to.equal(user_profile_account.currentTodoIndex);
+      expect(markedBool).to.equal(false);
+    } catch (e) {
+      // console.log(`The occured error is : ${e}`);
+      throw e;
+    }
   });
 
   it("Marked Todo", async () => {});

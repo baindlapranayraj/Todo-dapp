@@ -95,7 +95,7 @@ pub struct CreateTodo<'info> {
     #[account(
         init,
         payer = authority,
-        seeds = [TODO_TAG, authority.key().as_ref(), &((todo_index).to_le_bytes())], // Updated to use todo_index argument
+        seeds = [TODO_TAG, authority.key().as_ref(), todo_index.to_le_bytes().as_ref()], // Updated to use todo_index argument
         bump,
         space = 8 + TodoAccount::INIT_SPACE
     )]
@@ -137,7 +137,7 @@ pub struct RemoveTodo<'info> {
     #[account(
         mut,
         close = authority,
-        seeds = [TODO_TAG, authority.key().as_ref(), &[todo_idx as u8]],
+        seeds = [TODO_TAG, authority.key().as_ref(), todo_idx.to_le_bytes().as_ref()],
         bump,
         has_one = authority
     )]
