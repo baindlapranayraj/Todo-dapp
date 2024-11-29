@@ -20,25 +20,35 @@ pub mod todo_dapp {
         user_profile.total_todo = 0;
         user_profile.current_todo_index = 0;
 
-        msg!("The user account is created {:?}", user_profile.authority);
+        // msg!("The user account is created {:?}", user_profile.authority);
         Ok(())
     }
 
     // Creates Todo account
-    pub fn create_todo(ctx: Context<CreateTodo>, content: String, _todo_index: u8) -> Result<()> {
+    pub fn create_todo(ctx: Context<CreateTodo>, content: String, todo_index: u8) -> Result<()> {
         let todo_account = &mut ctx.accounts.todo_account;
         let user_profile = &mut ctx.accounts.user_profile;
-
-        // Use the argument passed as an instruction to determine the PDA
-        let todo_index = user_profile.current_todo_index;
-
-        user_profile.total_todo = user_profile.total_todo.checked_add(1).unwrap();
-        user_profile.current_todo_index = user_profile.current_todo_index.checked_add(1).unwrap();
 
         todo_account.content = content;
         todo_account.idx = todo_index;
         todo_account.marked_bool = false;
         todo_account.authority = ctx.accounts.authority.key();
+
+        let todo_pda = Pubkey::create_program_address(
+            &[
+                TODO_TAG,
+                ctx.accounts.authority.key().as_ref(),
+                todo_index.to_le_bytes().as_ref(),
+            ],
+            ctx.program_id,
+        )
+        .unwrap();
+
+        msg!("Expected PDA is {:?}", todo_pda);
+
+        // Use the argument passed as an instruction to determine the PDA
+        user_profile.total_todo = user_profile.total_todo.checked_add(1).unwrap();
+        user_profile.current_todo_index = user_profile.current_todo_index.checked_add(1).unwrap();
 
         msg!("New Todo is created");
         Ok(())

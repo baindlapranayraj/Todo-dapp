@@ -4,6 +4,7 @@ import { TodoDapp } from "../target/types/todo_dapp";
 import { utf8 } from "@project-serum/anchor/dist/cjs/utils/bytes";
 import { createLogger } from "vite";
 import { expect } from "chai";
+import { BN } from "bn.js";
 
 describe("todo_dapp", () => {
   // Configure the client to use the local cluster.
@@ -18,6 +19,9 @@ describe("todo_dapp", () => {
     [utf8.encode("USER_STATE"), provider.wallet.publicKey.toBuffer()],
     program.programId
   );
+
+  console.log(`The authority wallet addres is ${provider.wallet.publicKey}`);
+  console.log(`The PDA for creating User Profile is: ${userPDA.toString()}`);
 
   it("Initialized User Profile Account!", async () => {
     console.log("Creating User Profile Account.......");
@@ -44,13 +48,15 @@ describe("todo_dapp", () => {
       // console.log(user_profile_account);
       // let arr = Buffer.from(user_profile_account.currentTodoIndex.toString());
 
-      let uint8Array = new Uint8Array([user_profile_account.currentTodoIndex]);
+      let index = new BN(user_profile_account.currentTodoIndex);
 
       let [todoPDA, _bump] = anchor.web3.PublicKey.findProgramAddressSync(
         [
-          Buffer.from("TODO_ACCOUNT"),
+          utf8.encode("TODO_ACCOUNT"),
+          // Buffer.from("TODO_ACCOUNT"),
           provider.wallet.publicKey.toBuffer(),
-          uint8Array,
+          index.toArrayLike(Buffer, "le", 8),
+          // Buffer.from([user_profile_account.currentTodoIndex]),
         ],
         program.programId
       );
