@@ -52,11 +52,11 @@ describe("todo_dapp", () => {
 
       let [todoPDA, _bump] = anchor.web3.PublicKey.findProgramAddressSync(
         [
-          utf8.encode("TODO_ACCOUNT"),
-          // Buffer.from("TODO_ACCOUNT"),
-          provider.wallet.publicKey.toBuffer(),
-          index.toArrayLike(Buffer, "le", 8),
-          // Buffer.from([user_profile_account.currentTodoIndex]),
+          Buffer.from("TODO_ACCOUNT"), // little endian formate
+          provider.wallet.publicKey.toBuffer(), // little endian formate
+          // We  use toBytes beacuse it return big endian in Unit8Array where as toBuffer
+          // returnd little endian in buffer(Nodejs specific object)
+          Buffer.from([user_profile_account.currentTodoIndex]), // little endian formate
         ],
         program.programId
       );
