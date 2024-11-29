@@ -53,9 +53,7 @@ describe("todo_dapp", () => {
       let [todoPDA, _bump] = anchor.web3.PublicKey.findProgramAddressSync(
         [
           Buffer.from("TODO_ACCOUNT"), // little endian formate
-          provider.wallet.publicKey.toBuffer(), // little endian formate
-          // We  use toBytes beacuse it return big endian in Unit8Array where as toBuffer
-          // returnd little endian in buffer(Nodejs specific object)
+          provider.wallet.publicKey.toBuffer(),
           Buffer.from([user_profile_account.currentTodoIndex]), // little endian formate
         ],
         program.programId
@@ -90,3 +88,8 @@ describe("todo_dapp", () => {
   it("Marked Todo", async () => {});
   it("Removed Todo", async () => {});
 });
+
+// +++++++++++++++++++++++++++++ Learnings +++++++++++++++++++++++++++
+// - for Solana PDAs, the seed should be in little-endian byte format. If you need it in little-endian, you should convert it accordingly.
+// - provider.wallet.publicKey.toBuffer(): This returns the public key in big-endian format,
+// -
