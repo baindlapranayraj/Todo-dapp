@@ -38,19 +38,19 @@ pub mod todo_dapp {
             &[
                 TODO_TAG,
                 ctx.accounts.authority.key().as_ref(),
-                todo_index.to_le_bytes().as_ref(),
+                &todo_index.to_le_bytes(),
             ],
             ctx.program_id,
         )
         .unwrap();
 
-        msg!("Expected PDA is {:?}", todo_pda);
+        msg!("PDA: {:?}", todo_pda);
 
         // Use the argument passed as an instruction to determine the PDA
         user_profile.total_todo = user_profile.total_todo.checked_add(1).unwrap();
         user_profile.current_todo_index = user_profile.current_todo_index.checked_add(1).unwrap();
 
-        msg!("New Todo is created");
+        // msg!("New Todo is created");
         Ok(())
     }
 
@@ -121,7 +121,7 @@ pub struct MarkeTodo<'info> {
     pub authority: Signer<'info>,
     #[account(
         mut,
-        seeds = [TODO_TAG, authority.key().as_ref(), &[todo_idx as u8]],
+        seeds = [TODO_TAG, authority.key().as_ref(), todo_idx.to_le_bytes().as_ref()],
         bump,
         has_one = authority
     )]
