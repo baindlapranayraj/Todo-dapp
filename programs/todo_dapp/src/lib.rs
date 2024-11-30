@@ -25,32 +25,23 @@ pub mod todo_dapp {
     }
 
     // Creates Todo account
-    pub fn create_todo(ctx: Context<CreateTodo>, content: String, todo_index: u8) -> Result<()> {
+    pub fn create_todo(ctx: Context<CreateTodo>, content: String) -> Result<()> {
         let todo_account = &mut ctx.accounts.todo_account;
         let user_profile = &mut ctx.accounts.user_profile;
-
+    
+        // Populate TodoAccount data
         todo_account.content = content;
-        todo_account.idx = todo_index;
+        todo_account.idx = user_profile.current_todo_index;
         todo_account.marked_bool = false;
         todo_account.authority = ctx.accounts.authority.key();
 
-        let todo_pda = Pubkey::create_program_address(
-            &[
-                TODO_TAG,
-                ctx.accounts.authority.key().as_ref(),
-                &todo_index.to_le_bytes(),
-            ],
-            ctx.program_id,
-        )
-        .unwrap();
-
-        msg!("PDA: {:?}", todo_pda);
-
-        // Use the argument passed as an instruction to determine the PDA
+    
+        // Increment the indices in the UserProfile account
         user_profile.total_todo = user_profile.total_todo.checked_add(1).unwrap();
         user_profile.current_todo_index = user_profile.current_todo_index.checked_add(1).unwrap();
+    
+        msg!("New Todo created with index {}", todo_account.idx);
 
-        // msg!("New Todo is created");
         Ok(())
     }
 
@@ -105,7 +96,7 @@ pub struct CreateTodo<'info> {
     #[account(
         init,
         payer = authority,
-        seeds = [TODO_TAG, authority.key().as_ref(), &todo_index.to_le_bytes()], // Updated to use todo_index argument
+        seeds = [TODO_TAG, authority.key().as_ref(), user_profile.current_todo_index.to_le_bytes().as_ref()], // Updated to use todo_index argument
         bump,
         space = 8 + TodoAccount::INIT_SPACE
     )]
