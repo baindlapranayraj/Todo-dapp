@@ -2,7 +2,6 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { TodoDapp } from "../target/types/todo_dapp";
 import { utf8 } from "@project-serum/anchor/dist/cjs/utils/bytes";
-import { createLogger } from "vite";
 import { expect } from "chai";
 import { BN } from "bn.js";
 
@@ -20,22 +19,18 @@ describe("todo_dapp", () => {
     program.programId
   );
 
+  let content_todo = "My name is pranaya raj";
+
   console.log(`The authority wallet addres is ${provider.wallet.publicKey}`);
   console.log(`The PDA for creating User Profile is: ${userPDA.toString()}`);
 
   it("Initialized User Profile Account!", async () => {
     console.log("Creating User Profile Account.......");
-    const trxHash = await program.methods
-      .initializeUser()
-      .accounts({
-        authority: provider.wallet.publicKey,
-        userProfile: userPDA,
-        systemProgram: anchor.web3.SystemProgram.programId,
-      })
-      .rpc();
+    const trxHash = await program.methods.initializeUser().rpc();
 
     let { totalTodo, currentTodoIndex } =
       await program.account.userProfile.fetch(userPDA);
+    console.log(`Message from initialize user account ${currentTodoIndex}`);
     expect(totalTodo == 0);
     expect(currentTodoIndex == 0);
   });
@@ -71,11 +66,14 @@ describe("todo_dapp", () => {
 
   it("Marked Todo", async () => {
     try {
+
       // Fetch the user profile account
       let userProfile = await program.account.userProfile.fetch(userPDA);
 
+
       // Get the index of the last created todo
       let todoIdx = userProfile.currentTodoIndex - 1;
+
 
       // Compute the PDA for the todo using the index
       let [todoPDA, _todoBump] = anchor.web3.PublicKey.findProgramAddressSync(
@@ -83,6 +81,7 @@ describe("todo_dapp", () => {
           Buffer.from("TODO_ACCOUNT"),
           provider.wallet.publicKey.toBuffer(),
           Buffer.from([todoIdx]), // Convert index to byte
+
         ],
         program.programId
       );
@@ -98,6 +97,7 @@ describe("todo_dapp", () => {
           systemProgram: anchor.web3.SystemProgram.programId,
         })
         .rpc();
+
 
       // Fetch the updated todo and verify it is marked
       const { markedBool } = await program.account.todoAccount.fetch(todoPDA);
@@ -138,6 +138,7 @@ describe("todo_dapp", () => {
           userProfile: userPDA,
           systemProgram: anchor.web3.SystemProgram.programId,
         })
+
         .rpc();
 
       // Fetch the updated user profile and verify the total todo count is decremented
@@ -148,8 +149,10 @@ describe("todo_dapp", () => {
       expect(updatedUserProfile.totalTodo).to.equal(userProfile.totalTodo - 1);
       console.log(`Todo with index ${todoIdx} was removed successfully.`);
     } catch (e) {
+
       console.error("Error removing todo:", e);
       throw e;
+
     }
   });
 });
@@ -157,4 +160,3 @@ describe("todo_dapp", () => {
 // +++++++++++++++++++++++++++++ Learnings +++++++++++++++++++++++++++
 // - for Solana PDAs, the seed should be in little-endian byte format. If you need it in little-endian, you should convert it accordingly.
 // - provider.wallet.publicKey.toBuffer(): This returns the public key in big-endian format,
-// -

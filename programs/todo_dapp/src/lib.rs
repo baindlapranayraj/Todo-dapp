@@ -34,12 +34,14 @@ pub mod todo_dapp {
         todo_account.idx = user_profile.current_todo_index;
         todo_account.marked_bool = false;
         todo_account.authority = ctx.accounts.authority.key();
+
     
         // Increment the indices in the UserProfile account
         user_profile.total_todo = user_profile.total_todo.checked_add(1).unwrap();
         user_profile.current_todo_index = user_profile.current_todo_index.checked_add(1).unwrap();
     
         msg!("New Todo created with index {}", todo_account.idx);
+
         Ok(())
     }
 
