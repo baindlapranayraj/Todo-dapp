@@ -6,7 +6,7 @@ pub mod state;
 #[allow(unused_imports)]
 use crate::{constants::*, error::*, state::*};
 
-declare_id!("ExmLEjhb3xa2rj8wraPby9HBYJs34FJyS6MvgJoWX4fS");
+declare_id!("Cfn4iuNeGA18mo5xMGkiFpPFxiyt88gbtUJtRf2D9nTy");
 
 #[program]
 pub mod todo_dapp {
@@ -28,18 +28,17 @@ pub mod todo_dapp {
     pub fn create_todo(ctx: Context<CreateTodo>, content: String) -> Result<()> {
         let todo_account = &mut ctx.accounts.todo_account;
         let user_profile = &mut ctx.accounts.user_profile;
-    
+
         // Populate TodoAccount data
         todo_account.content = content;
         todo_account.idx = user_profile.current_todo_index;
         todo_account.marked_bool = false;
         todo_account.authority = ctx.accounts.authority.key();
 
-    
         // Increment the indices in the UserProfile account
         user_profile.total_todo = user_profile.total_todo.checked_add(1).unwrap();
         user_profile.current_todo_index = user_profile.current_todo_index.checked_add(1).unwrap();
-    
+
         msg!("New Todo created with index {}", todo_account.idx);
 
         Ok(())
@@ -81,7 +80,7 @@ pub struct InitializeUser<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(todo_index: u8)] // Added this to pass the index as an instruction argument
+
 pub struct CreateTodo<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -97,6 +96,7 @@ pub struct CreateTodo<'info> {
         init,
         payer = authority,
         seeds = [TODO_TAG, authority.key().as_ref(), user_profile.current_todo_index.to_le_bytes().as_ref()], // Updated to use todo_index argument
+        // seeds = [TODO_TAG, authority.key().as_ref(), &[user_profile.last_todo as u8].as_ref()],
         bump,
         space = 8 + TodoAccount::INIT_SPACE
     )]
@@ -171,5 +171,10 @@ pub struct RemoveTodo<'info> {
 //    - The `mut` attribute allows modifying account data within a transaction.
 //    - For instance:
 //      - `user_profile` is updated to increment `current_todo_index` and `total_todo` in `CreateTodo`.
+//
+// 6.Why use as_ref() instead of .to_byte()
+//     - .to_bytes() creates a new copy of the data, whereas .as_ref() provides a reference to the existing
+//        data without creating a copy.
+//    -In Solana programs, memory efficiency is critical Using .as_ref() avoids unnecessary allocation or copying.
 //
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

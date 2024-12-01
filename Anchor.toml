@@ -5,7 +5,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-todo_dapp = "ExmLEjhb3xa2rj8wraPby9HBYJs34FJyS6MvgJoWX4fS"
+todo_dapp = "Cfn4iuNeGA18mo5xMGkiFpPFxiyt88gbtUJtRf2D9nTy"
 
 [registry]
 url = "https://api.apr.dev"

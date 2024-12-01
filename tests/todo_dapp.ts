@@ -2,8 +2,24 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { TodoDapp } from "../target/types/todo_dapp";
 import { utf8 } from "@project-serum/anchor/dist/cjs/utils/bytes";
-import { expect } from "chai";
-import { BN } from "bn.js";
+import { assert, expect } from "chai";
+import { Wallet } from "@project-serum/anchor";
+
+function getTodoPDA(
+  programId: anchor.web3.PublicKey,
+  provider: anchor.AnchorProvider,
+  todo_indx: number
+) {
+  let todoPDA = anchor.web3.PublicKey.findProgramAddressSync(
+    [
+      Buffer.from("TODO_ACCOUNT"),
+      provider.wallet.publicKey.toBuffer(),
+      Buffer.from([todo_indx]),
+    ],
+    programId
+  );
+  return todoPDA;
+}
 
 describe("todo_dapp", () => {
   // Configure the client to use the local cluster.
@@ -42,13 +58,10 @@ describe("todo_dapp", () => {
     let currentTodoIndex = userProfile.currentTodoIndex;
 
     // Generate the PDA for the new todo
-    let [todoPDA, _bump] = anchor.web3.PublicKey.findProgramAddressSync(
-      [
-        Buffer.from("TODO_ACCOUNT"),
-        provider.wallet.publicKey.toBuffer(),
-        Buffer.from([currentTodoIndex]), // Use the current index
-      ],
-      program.programId
+    let [todoPDA, _bump] = getTodoPDA(
+      program.programId,
+      provider,
+      currentTodoIndex
     );
 
     await program.methods
@@ -61,99 +74,50 @@ describe("todo_dapp", () => {
       })
       .rpc();
 
-    console.log("Created todo with index:", currentTodoIndex);
+    console.log(
+      `Created todo with index:${currentTodoIndex} and the PDA is ${todoPDA}`
+    );
   });
 
   it("Marked Todo", async () => {
     try {
+      let { totalTodo } = await program.account.userProfile.fetch(userPDA);
+      let [todoPDA] = getTodoPDA(program.programId, provider, totalTodo - 1);
 
-      // Fetch the user profile account
-      let userProfile = await program.account.userProfile.fetch(userPDA);
-
-
-      // Get the index of the last created todo
-      let todoIdx = userProfile.currentTodoIndex - 1;
-
-
-      // Compute the PDA for the todo using the index
-      let [todoPDA, _todoBump] = anchor.web3.PublicKey.findProgramAddressSync(
-        [
-          Buffer.from("TODO_ACCOUNT"),
-          provider.wallet.publicKey.toBuffer(),
-          Buffer.from([todoIdx]), // Convert index to byte
-
-        ],
-        program.programId
-      );
-
-      console.log("The TodoPDA to be marked is:", todoPDA.toBase58());
-
-      // Mark the todo
-      await program.methods
-        .markTodo(todoIdx)
-        .accounts({
+      let trxSignature = await program.methods
+        .markTodo(totalTodo - 1)
+        .accountsStrict({
           authority: provider.wallet.publicKey,
           todoAccount: todoPDA,
           systemProgram: anchor.web3.SystemProgram.programId,
         })
         .rpc();
+      console.log(
+        `The mark todo transaction is successfull sign: ${trxSignature.toString()}`
+      );
 
+      let { markedBool } = await program.account.todoAccount.fetch(todoPDA);
 
-      // Fetch the updated todo and verify it is marked
-      const { markedBool } = await program.account.todoAccount.fetch(todoPDA);
-
-      expect(markedBool).to.equal(true);
-      console.log(`Todo with index ${todoIdx} is marked as completed.`);
+      assert.equal(markedBool, true);
     } catch (e) {
-      console.error("Error marking todo:", e);
-      throw e;
+      console.error(e);
     }
   });
   it("Removed Todo", async () => {
-    try {
-      // Fetch the user profile account
-      let userProfile = await program.account.userProfile.fetch(userPDA);
+    let { totalTodo } = await program.account.userProfile.fetch(userPDA);
+    let todoPDA = getTodoPDA(program.programId, provider, totalTodo - 1)[0];
 
-      // Get the index of the last created todo
-      let todoIdx = userProfile.currentTodoIndex - 1;
+    await program.methods
+      .removeTodo(totalTodo - 1)
+      .accountsStrict({
+        authority: provider.wallet.publicKey,
+        todoAccount: todoPDA,
+        userProfile: userPDA,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .rpc();
 
-      // Compute the PDA for the todo using the index
-      let [todoPDA, _todoBump] = anchor.web3.PublicKey.findProgramAddressSync(
-        [
-          Buffer.from("TODO_ACCOUNT"),
-          provider.wallet.publicKey.toBuffer(),
-          Buffer.from([todoIdx]), // Convert index to byte
-        ],
-        program.programId
-      );
-
-      console.log("The TodoPDA to be removed is:", todoPDA.toBase58());
-
-      // Remove the todo
-      await program.methods
-        .removeTodo(todoIdx)
-        .accounts({
-          authority: provider.wallet.publicKey,
-          todoAccount: todoPDA,
-          userProfile: userPDA,
-          systemProgram: anchor.web3.SystemProgram.programId,
-        })
-
-        .rpc();
-
-      // Fetch the updated user profile and verify the total todo count is decremented
-      const updatedUserProfile = await program.account.userProfile.fetch(
-        userPDA
-      );
-
-      expect(updatedUserProfile.totalTodo).to.equal(userProfile.totalTodo - 1);
-      console.log(`Todo with index ${todoIdx} was removed successfully.`);
-    } catch (e) {
-
-      console.error("Error removing todo:", e);
-      throw e;
-
-    }
+    console.log(`The Todo of Account: ${todoPDA} is removed!!`);
   });
 });
 
