@@ -3,7 +3,7 @@ import { Program } from "@coral-xyz/anchor";
 import { TodoDapp } from "../target/types/todo_dapp";
 import { utf8 } from "@project-serum/anchor/dist/cjs/utils/bytes";
 import { assert, expect } from "chai";
-import { Wallet } from "@project-serum/anchor";
+
 
 function getTodoPDA(
   programId: anchor.web3.PublicKey,
@@ -96,7 +96,9 @@ describe("todo_dapp", () => {
         `The mark todo transaction is successfull sign: ${trxSignature.toString()}`
       );
 
-      let { markedBool } = await program.account.todoAccount.fetch(todoPDA);
+      let { markedBool, authority } = await program.account.todoAccount.fetch(
+        todoPDA
+      );
 
       assert.equal(markedBool, true);
     } catch (e) {

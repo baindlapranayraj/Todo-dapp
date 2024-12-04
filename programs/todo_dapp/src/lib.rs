@@ -80,7 +80,6 @@ pub struct InitializeUser<'info> {
 }
 
 #[derive(Accounts)]
-
 pub struct CreateTodo<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
